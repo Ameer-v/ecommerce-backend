@@ -9,8 +9,9 @@ import { JwtStrategy } from './jwt.strategy';
   imports: [
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret_key',
-      signOptions: { expiresIn: '7d' },
+      // Security: No fallback secret - app MUST have JWT_SECRET env var
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1h' },
     }),
   ],
   providers: [AuthService, JwtStrategy],

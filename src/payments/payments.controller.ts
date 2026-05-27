@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, UseGuards, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/payment.dto';
 import { JwtGuard } from '../auth/guards/jwt.guard';
@@ -24,13 +24,19 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Lihat semua payment (Admin only)' })
   @UseGuards(RolesGuard)
   @Roles('Admin')
-  findAll() {
-    return this.paymentsService.findAll();
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.paymentsService.findAll(Number(page) || 1, Number(limit) || 10);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Lihat payment by ID' })
-  findOne(@Param('id') id: string) {
-    return this.paymentsService.findOne(id);
+  findOne(@CurrentUser() user: any, @Param('id') id: string) {
+    // Security: Pass user info for ownership check
+    return this.paymentsService.findOne(id, user.id, user.role);
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/payment.dto';
 
@@ -46,8 +46,38 @@ export class PaymentsService {
     return { message: 'Pembayaran berhasil', payment };
   }
 
-  async findAll() {
-    return this.prisma.payment.findMany({
+  async findAll(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const [payments, total] = await Promise.all([
+      this.prisma.payment.findMany({
+        skip,
+        take: limit,
+        orderBy: { paidAt: 'desc' },
+        include: {
+          order: {
+            include: {
+              user: { select: { id: true, name: true, email: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.payment.count(),
+    ]);
+
+    return {
+      data: payments,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async findOne(id: string, userId: string, userRole: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
       include: {
         order: {
           include: {
@@ -56,15 +86,14 @@ export class PaymentsService {
         },
       },
     });
-  }
-
-  async findOne(id: string) {
-    const payment = await this.prisma.payment.findUnique({
-      where: { id },
-      include: { order: true },
-    });
 
     if (!payment) throw new NotFoundException('Payment tidak ditemukan');
+
+    // Security: Only owner or Admin can view payment details
+    if (payment.order.userId !== userId && userRole !== 'Admin') {
+      throw new ForbiddenException('Anda tidak memiliki akses ke payment ini');
+    }
+
     return payment;
   }
 }

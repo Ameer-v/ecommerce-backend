@@ -69,6 +69,8 @@ export class UsersService {
 
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.user.delete({ where: { id } });
+    // Security: Don't return the deleted user object (contains passwordHash)
+    await this.prisma.user.delete({ where: { id } });
+    return { message: 'User berhasil dihapus' };
   }
 }

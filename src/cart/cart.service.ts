@@ -12,18 +12,26 @@ export class CartService {
     });
 
     if (!product) throw new NotFoundException('Produk tidak ditemukan');
-    if (product.stock < dto.quantity) {
-      throw new BadRequestException('Stok tidak mencukupi');
-    }
 
     const existing = await this.prisma.cartItem.findFirst({
       where: { userId, productId: dto.productId },
     });
 
+    const newQuantity = existing
+      ? existing.quantity + dto.quantity
+      : dto.quantity;
+
+    // Security: Check total quantity against available stock
+    if (product.stock < newQuantity) {
+      throw new BadRequestException(
+        `Stok tidak mencukupi (tersedia: ${product.stock}, diminta: ${newQuantity})`,
+      );
+    }
+
     if (existing) {
       return this.prisma.cartItem.update({
         where: { id: existing.id },
-        data: { quantity: existing.quantity + dto.quantity },
+        data: { quantity: newQuantity },
       });
     }
 
