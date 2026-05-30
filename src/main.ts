@@ -11,8 +11,13 @@ async function bootstrap() {
   app.use(helmet());
 
   // Security: CORS configuration from environment
+  // CORS_ORIGIN can be a comma-separated list: "https://domain1.com,https://domain2.com"
+  const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+    : ['http://localhost:3001', 'https://ecommerce-frontend-two-khaki-48.vercel.app'];
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3001',
+    origin: allowedOrigins,
     credentials: true,
   });
 
