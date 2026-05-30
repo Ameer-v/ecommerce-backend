@@ -31,7 +31,7 @@ async function bootstrap() {
   );
 
   // Security: Only expose Swagger in non-production
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.SWAGGER_ENABLED === 'true') {
     const config = new DocumentBuilder()
       .setTitle('E-Commerce API')
       .setDescription('API Documentation untuk project UKL E-Commerce')
